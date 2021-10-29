@@ -1,0 +1,109 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deadmanssnitch
+  name: deadmanssnitch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deadmanssnitch
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: deadmanssnitch
+    spec:
+      containers:
+      - image: mschoudhary/deadmanssnitch:v0.1.0
+        imagePullPolicy: Always
+        name: deadmanssnitch
+        resources: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deadmanssnitch-redis
+  name: deadmanssnitch-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deadmanssnitch-redis
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: deadmanssnitch-redis
+    spec:
+      containers:
+      - image: redis:6.2
+        name: redis
+        resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: deadmanssnitch-redis
+  name: deadmanssnitch-redis
+spec:
+  ports:
+  - name: 6379-6379
+    port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    app: deadmanssnitch-redis
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: deadmanssnitch
+  name: deadmanssnitch
+spec:
+  ports:
+  - name: 9090-9090
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: deadmanssnitch
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deadmanssnitch-policy
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+  podSelector:
+    matchLabels:
+      app: deadmanssnitch
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deadmanssnitch-redis-policy
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+  podSelector:
+    matchLabels:
+      app: deadmanssnitch-redis
+  policyTypes:
+  - Ingress
